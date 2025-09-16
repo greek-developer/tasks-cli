@@ -1,0 +1,70 @@
+
+using todocli.Config;
+
+namespace todocli.Todo;
+
+
+public static class TodoManager
+{
+    // This class is intentionally left empty for now.   
+    // Future methods for managing todos can be added here.
+
+    private static List<Todo> _todos;
+
+    public static List<Todo> Todos { get => _todos ??= LoadTodos(); }
+
+    private static List<Todo> LoadTodos()
+    {
+        var config = ConfigurationManager.Config;
+        var todos = new List<Todo>();
+
+        foreach (var folderConfiguration in config.Folders)
+        {
+            if (Directory.Exists(folderConfiguration.Path))
+            {
+                foreach (var fileNamePattern in folderConfiguration.FileNamePatterns)
+                {
+                    var todoFiles = Directory.GetFiles(folderConfiguration.Path, fileNamePattern, SearchOption.AllDirectories);
+
+                    foreach (var file in todoFiles)
+                    {
+                        var lines = File.ReadAllLines(file);
+                        for (int i = 0; i < lines.Length; i++)
+                        {
+                            var line = lines[i].TrimStart();
+
+                            if (folderConfiguration.todoPrefixes.Any(line.StartsWith))
+                            {
+
+                                todos.Add(new Todo
+                                {
+                                    Description = line,
+                                    FilePath = file,
+                                    LineNumber = i + 1,
+                                    DueDate = ExtractDueDate(line, config.Global.DueDatePattern),
+                                });
+                            }
+                        }
+                    }
+                }
+
+                return todos;
+            }
+        }
+
+        return new List<Todo>();
+    }
+    
+    private static DateOnly? ExtractDueDate(string line, string dueDatePattern)
+    {
+        var regex = new System.Text.RegularExpressions.Regex(dueDatePattern);
+        var match = regex.Match(line);
+
+        if (match.Success && DateOnly.TryParse(match.Groups[1].Value, out var dueDate))
+        {
+            return dueDate;
+        }
+
+        return null;
+    }
+}
