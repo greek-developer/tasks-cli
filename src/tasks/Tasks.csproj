@@ -5,16 +5,13 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Tasks</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <PackAsTool>true</PackAsTool>
-    <ToolCommandName>tasks</ToolCommandName>
+    <Nullable>enable</Nullable>    
     <PackageOutputPath>../../nupkg</PackageOutputPath>
+    <PackAsTool>true</PackAsTool>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup>    
+    <ToolCommandName>tasks</ToolCommandName>    
     <PackageId>grdev.tasks</PackageId>
     <Version>0.1.0</Version>
     <Authors>Thomas Sarmis (thomas.sarmis@gmail.com), GRDEV</Authors>
