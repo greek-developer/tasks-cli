@@ -25,14 +25,15 @@ jobs:
       - name: Check Version
         id: check_version
         run: |
-          VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" **/*.csproj)
+          CSPROJ=src/tasks/Tasks.csproj
+          VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" "$CSPROJ")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Package version: $VERSION"
 
-          if git show HEAD~1:**/*.csproj | grep -q "<Version>$VERSION</Version>"; then
+          if git show HEAD~1:"$CSPROJ" | grep -q "<Version>$VERSION</Version>"; then
             echo "Version did not change. Exiting."
             exit 0
-          fi          
+          fi
 
       - name: Restore Project Dependencies
         run: dotnet restore
