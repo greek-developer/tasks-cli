@@ -29,15 +29,8 @@
     <PackageReference Include="System.CommandLine" Version="2.0.0-rc.1.25451.107" />
   </ItemGroup>
 
-
-   <PropertyGroup>
-        
-        
-        
-    </PropertyGroup>
-
-    <ItemGroup>        
-        <None Include="..\..\README.md" Pack="true" PackagePath="\"/>        
-    </ItemGroup>
+  <ItemGroup>        
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>        
+  </ItemGroup>
 
 </Project>
