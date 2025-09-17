@@ -1,12 +1,16 @@
 # grdev.tasks
 
-A .NET command-line tool for managing tasks using the Getting Things Done (GTD) methodology. This project provides commands for handling todos, projects, tags, and folders, making it easy to organize and track your work from the terminal.
+A .NET command-line tool for managing tasks in .txt or .md files. The tool monitors multiple folders and gather the tasks based on common prefixes (configurable). Tasks can be filtered by tags, and can be displayed in a GTD-compatible list (`tasks gtd`)
 
 ## Features
 - Add, list, and complete todos
 - Organize tasks by project, tag, and folder
 - Configuration management for custom workflows
 - Extensible command structure
+
+## Prerelease Disclaimer
+
+This is a pre-release version so the functionality is not yet refined and there may be bugs. Currently the application only reads tasks and does not modify files in any way (except it's own config file)
 
 ## Getting Started
 
@@ -21,7 +25,12 @@ A .NET command-line tool for managing tasks using the Getting Things Done (GTD) 
 ### Setup 
 
 Add one or more folders for the tool to monitor
+
 `tasks folders add <path> [--name <name>]`
+
+Folder options (file patterns to scan, tasks prefixes, etc) can be configured in the configuration file. Use `get-config-path` to get the path to the configuration file.
+
+`tasks get-config-path`
 
 ## Available Commands
 
