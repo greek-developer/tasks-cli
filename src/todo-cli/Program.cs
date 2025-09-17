@@ -26,6 +26,9 @@ namespace todocli
 
             AddCommands(rootCommand, FolderCommands.GenerateFolderCommands());
             AddCommands(rootCommand, TodoCommands.GenerateTodoCommands());
+            AddCommands(rootCommand, TagCommands.GenerateTagCommands());
+            AddCommands(rootCommand, ProjectCommands.ProjectTagCommands());
+            AddCommands(rootCommand, GTDCommands.GenerateGTDCommands());
 
             ParseResult parseResult = rootCommand.Parse(args);
             return parseResult.Invoke();

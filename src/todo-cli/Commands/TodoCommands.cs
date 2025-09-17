@@ -14,17 +14,33 @@ public static class TodoCommands
 
     public static IEnumerable<Command> GenerateTodoCommands()
     {
-        var todosListCommand = new Command("list", "list all todos");
-        todosListCommand.SetAction(_ =>
+        var todoListCommand = new Command("list", "list all todos")
         {
+            new Option<string?>("--tags", "-t")
+            {
+                Required = false,
+                Description = "Comma-separated tags to filter todos by (e.g. --tags tag1,tag2)"
+            },
+        };
+
+        todoListCommand.SetAction(parseResult =>
+        {
+            var tags = parseResult
+                .GetValue<string?>("--tags")
+                ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
             Console.WriteLine("");
             Console.WriteLine("Todos:");
             Console.WriteLine("");
 
+            var todos = TodoManager
+                .Todos
+                .Where(t => tags == null || tags.Length == 0 || t.Tags.Intersect(tags).Any());
+
             Console.WriteLine(
                 string.Join(
                     Environment.NewLine,
-                    TodoManager.Todos
+                    todos
                         .Where(t => t.DueDate != null)
                         .OrderBy(t => t.DueDate)
                         .Select(t => $"{t.Description} (-> {t.FilePath}:{t.LineNumber})")
@@ -36,13 +52,12 @@ public static class TodoCommands
             Console.WriteLine(
                 string.Join(
                     Environment.NewLine,
-                    TodoManager.Todos
-                        .Where(t => t.DueDate == null)                        
+                    todos
+                        .Where(t => t.DueDate == null)
                         .Select(t => $"{t.Description} (-> {t.FilePath}:{t.LineNumber})")
                 )
-
             );
-            
+
             Console.WriteLine("");            
         });        
 
@@ -57,12 +72,13 @@ public static class TodoCommands
 
         });
 
-        var todosCommand = new Command("todos", "Manage todos")
+        return new[]
         {
-            todosListCommand,
-            todoAddCommand
+            new Command("todo", "Manage Todos")
+            {
+                todoListCommand,
+                todoAddCommand
+            }
         };
-
-        return new[] { todosCommand };
     }
 }

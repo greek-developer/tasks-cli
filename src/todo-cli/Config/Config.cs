@@ -2,15 +2,19 @@ using System.Text.Json.Serialization;
 
 public class TodoCliConfig
 {
-    [JsonPropertyName("global")]
-    public GlobalConfig Global { get; set; } = new();
-
     [JsonPropertyName("folders")]
     public List<MonitoredFolder> Folders { get; set; } = new();
 }
 
-public class GlobalConfig
-{
+
+public class MonitoredFolder 
+{  
+    [JsonPropertyName("path")]
+    public string Path { get; set; } = string.Empty;
+
+    [JsonPropertyName("friendlyName")]
+    public string FriendlyName { get; set; } = string.Empty;
+
     [JsonPropertyName("fileNamePatterns")]
     public List<string> FileNamePatterns { get; set; } = new() { "*.txt", "*.md", "*.todo" };
 
@@ -27,20 +31,11 @@ public class GlobalConfig
     public string ProjectPattern { get; set; } = "@\\w+";
 
     [JsonPropertyName("priorityPattern")]
-    public string PriorityPattern { get; set; } = "{priority:([A-Z])}";
+    public string PriorityPattern { get; set; } = "{pri: ([A-Z])}";
 
     [JsonPropertyName("defaultTodoFilename")]
     public string DefaultTodoFilename { get; set; } = "todo.md";
 
     [JsonPropertyName("ignoreHiddenFolders")]
     public bool IgnoreHiddenFolders { get; set; } = true;
-}
-
-public class MonitoredFolder : GlobalConfig
-{
-    [JsonPropertyName("path")]
-    public string Path { get; set; } = string.Empty;
-
-    [JsonPropertyName("friendlyName")]
-    public string FriendlyName { get; set; } = string.Empty;
 }
