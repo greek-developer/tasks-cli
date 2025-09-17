@@ -1,0 +1,54 @@
+name: Publish NuGet
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.csproj'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # fetch full history so we can compare versions and push tags
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Check Version
+        id: check_version
+        run: |
+          VERSION=$(xmllint --xpath "string(//Project/PropertyGroup/Version)" **/*.csproj)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Package version: $VERSION"
+
+          if git show HEAD~1:**/*.csproj | grep -q "<Version>$VERSION</Version>"; then
+            echo "Version did not change. Exiting."
+            exit 0
+          fi
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build project
+        run: dotnet build -c Release --no-restore
+
+      - name: Pack project
+        run: dotnet pack -c Release --no-build -o ./artifacts
+
+      - name: Publish to NuGet
+        run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${VERSION}
+          git push origin v${VERSION}
