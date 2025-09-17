@@ -5,14 +5,14 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using todocli.Commands;
-using todocli.Config;
+using Tasks.Commands;
+using Tasks.Config;
 
-namespace todocli
+namespace Tasks
 {
     public class Program
     {
-        public static async Task<int> Main(string[] args)
+        public static int Main(string[] args)
         {
             var rootCommand = new RootCommand("todo-cli: text-based todo management CLI tool");
 

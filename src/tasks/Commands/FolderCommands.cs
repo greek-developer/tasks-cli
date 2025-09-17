@@ -4,8 +4,8 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using todocli.Config;
-namespace todocli.Commands;
+using Tasks.Config;
+namespace Tasks.Commands;
 
 public static class FolderCommands
 {

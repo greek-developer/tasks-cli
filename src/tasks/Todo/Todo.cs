@@ -1,5 +1,5 @@
 
-namespace todocli.Todo;
+namespace Tasks.Todo;
 
 public class Todo
 {

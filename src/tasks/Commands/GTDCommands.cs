@@ -1,7 +1,7 @@
 using System.CommandLine;
-using todocli.Todo;
+using Tasks.Todo;
 
-namespace todocli.Commands;
+namespace Tasks.Commands;
 
 public static class GTDCommands
 {

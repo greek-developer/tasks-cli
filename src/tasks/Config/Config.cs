@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-public class TodoCliConfig
+public class TasksConfig
 {
     [JsonPropertyName("folders")]
     public List<MonitoredFolder> Folders { get; set; } = new();

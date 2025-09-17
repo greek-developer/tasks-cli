@@ -4,41 +4,41 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using todocli.Config;
-using todocli.Todo;
+using Tasks.Config;
+using Tasks.Todo;
 
-namespace todocli.Commands;
+namespace Tasks.Commands;
 
-public static class TagCommands
+public static class ProjectCommands
 {
-    public static IEnumerable<Command> GenerateTagCommands()
+    public static IEnumerable<Command> ProjectTagCommands()
     {
-        var tagListCommand = new Command("list", "list all tags");
-        tagListCommand.SetAction(_ =>
+        var projectListCommand = new Command("list", "list all projects");
+        projectListCommand.SetAction(_ =>
         {
             Console.WriteLine("");
-            Console.WriteLine("Tags:");
+            Console.WriteLine("Projects:");
             Console.WriteLine("");
 
             Console.WriteLine(
                 string.Join(
                     Environment.NewLine,
                     TodoManager.Todos
-                        .SelectMany(t => t.Tags)
+                        .SelectMany(t => t.Projects)
                         .Distinct()
                         .OrderBy(t => t)
                     )
 
             );
-
+            
             Console.WriteLine("");
         });        
 
         return new[]
         {
-            new Command("tag", "Manage Tags")
+            new Command("project", "Manage Projects")
             {
-                tagListCommand,
+                projectListCommand,
             }
         };
     }

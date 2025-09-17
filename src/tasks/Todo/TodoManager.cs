@@ -1,17 +1,19 @@
 
-using todocli.Config;
+using Tasks.Config;
 
-namespace todocli.Todo;
+namespace Tasks.Todo;
 
 
 public static class TodoManager
 {
     // This class is intentionally left empty for now.   
     // Future methods for managing todos can be added here.
+    public static List<Todo> Todos { get; private set; }
 
-    private static List<Todo> _todos;
-
-    public static List<Todo> Todos { get => _todos ??= LoadTodos(); }
+    static TodoManager()
+    {
+        Todos = LoadTodos();
+    }    
 
     private static List<Todo> LoadTodos()
     {

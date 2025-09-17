@@ -5,35 +5,37 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using todocli.Commands; 
+using Tasks.Commands; 
 
-namespace todocli.Config;
+namespace Tasks.Config;
 
 public static class ConfigurationManager
 {
 
-    private static TodoCliConfig? _config;
+    private static TasksConfig? _config;
     
-    public static TodoCliConfig Config { get => _config ??= LoadConfig(); }
+    public static TasksConfig Config { get => _config ??= LoadConfig(); }
 
     public static string GetConfigPath() =>
         Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".todo-cli",
+            ".tasks",
             "config.json");
 
-    private static TodoCliConfig LoadConfig()
+    private static TasksConfig LoadConfig()
     {
         var configPath = GetConfigPath();
 
         if (!File.Exists(configPath))
         {
             var configDir = Path.GetDirectoryName(configPath);
+
             if (!Directory.Exists(configDir))
             {
-                Directory.CreateDirectory(configDir);
+                Directory.CreateDirectory(configDir!);
             }
-            var defaultConfig = new TodoCliConfig();
+
+            var defaultConfig = new TasksConfig();
             var jsonOptions = new JsonSerializerOptions
             {
                 WriteIndented = true,
@@ -46,8 +48,8 @@ public static class ConfigurationManager
         else
         {
             var json = File.ReadAllText(configPath);
-            var config = JsonSerializer.Deserialize<TodoCliConfig>(json);
-            return config ?? new TodoCliConfig();
+            var config = JsonSerializer.Deserialize<TasksConfig>(json);
+            return config ?? new TasksConfig();
         }
     }
 

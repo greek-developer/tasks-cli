@@ -4,10 +4,10 @@ using System.Text.Json.Serialization;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-using todocli.Config;
-using todocli.Todo;
+using Tasks.Config;
+using Tasks.Todo;
 
-namespace todocli.Commands;
+namespace Tasks.Commands;
 
 public static class TodoCommands
 {
