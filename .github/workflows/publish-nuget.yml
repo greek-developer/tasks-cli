@@ -9,6 +9,7 @@ on:
 
 jobs:
   publish:
+    name: Publish Nugets 
     runs-on: ubuntu-latest
 
     steps:
