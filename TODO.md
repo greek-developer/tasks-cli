@@ -1,0 +1,6 @@
+- [ ] Make 'folder list' output nicer
+- [ ] Implement todo add command
+- [ ] Add --name parameter to commands to filder/direct action to specific folder
+- [ ] Investigate the possibility of a Command Palette Extension
+- [ ] Create releases with binaries among dotnet global tool push
+- [ ] Support Reccuring Tasks (consider: `{period: cron-expression}`)
