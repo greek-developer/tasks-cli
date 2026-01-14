@@ -12,9 +12,9 @@ namespace Tasks
 {
     public class Program
     {
-        public static int Main(string[] args)
+        public static Task<int> Main(string[] args)
         {
-            var rootCommand = new RootCommand("todo-cli: text-based todo management CLI tool");
+            var rootCommand = new RootCommand("tasks: text-based todo management CLI tool");
 
             var getConfigPathCommand = new Command(
                 "get-config-path",
@@ -30,8 +30,9 @@ namespace Tasks
             AddCommands(rootCommand, ProjectCommands.ProjectTagCommands());
             AddCommands(rootCommand, GTDCommands.GenerateGTDCommands());
 
-            ParseResult parseResult = rootCommand.Parse(args);
-            return parseResult.Invoke();
+            return rootCommand
+                .Parse(args)
+                .InvokeAsync();
         }
 
         private static void AddCommands(RootCommand rootCommand, IEnumerable<Command> commands)
