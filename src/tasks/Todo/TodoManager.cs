@@ -15,6 +15,33 @@ public static class TodoManager
         Todos = LoadTodos();
     }    
 
+    private static IEnumerable<string> GetFilesRecursive(string root, string pattern, MonitoredFolder config)
+    {
+        var excludedSet = new HashSet<string>(config.ExcludedFolders, StringComparer.OrdinalIgnoreCase);
+
+        IEnumerable<string> Recurse(string dir)
+        {
+            foreach (var file in Directory.EnumerateFiles(dir, pattern))
+                yield return file;
+
+            foreach (var subDir in Directory.EnumerateDirectories(dir))
+            {
+                var dirName = Path.GetFileName(subDir);
+
+                if (excludedSet.Contains(dirName))
+                    continue;
+
+                if (config.IgnoreHiddenFolders && dirName.StartsWith('.'))
+                    continue;
+
+                foreach (var file in Recurse(subDir))
+                    yield return file;
+            }
+        }
+
+        return Recurse(root);
+    }
+
     private static List<Todo> LoadTodos()
     {
         var config = ConfigurationManager.Config;
@@ -26,7 +53,7 @@ public static class TodoManager
             {
                 foreach (var fileNamePattern in folderConfiguration.FileNamePatterns)
                 {
-                    var todoFiles = Directory.GetFiles(folderConfiguration.Path, fileNamePattern, SearchOption.AllDirectories);
+                    var todoFiles = GetFilesRecursive(folderConfiguration.Path, fileNamePattern, folderConfiguration);
 
                     foreach (var file in todoFiles)
                     {

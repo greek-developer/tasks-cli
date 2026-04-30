@@ -38,4 +38,7 @@ public class MonitoredFolder
 
     [JsonPropertyName("ignoreHiddenFolders")]
     public bool IgnoreHiddenFolders { get; set; } = true;
+
+    [JsonPropertyName("excludedFolders")]
+    public List<string> ExcludedFolders { get; set; } = new() { "node_modules", ".git" };
 }
