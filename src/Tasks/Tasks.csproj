@@ -17,9 +17,9 @@
   <PropertyGroup>    
     <ToolCommandName>tasks</ToolCommandName>    
     <PackageId>grdev.tasks</PackageId>    
-    <Authors>Thomas Sarmis (thomas.sarmis@gmail.com), GRDEV</Authors>
     <Title>Greek Developer - Tasks CLI</Title>
     <Description>Task Management CLI</Description>    
+    <Authors>Thomas Sarmis (thomas.sarmis@gmail.com), GRDEV</Authors>
     <RepositoryUrl>https://github.com/greek-developer/tasks</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://greekdeveloper.com/projects/tasks</PackageProjectUrl>
