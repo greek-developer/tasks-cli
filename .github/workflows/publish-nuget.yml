@@ -3,41 +3,34 @@ name: Publish NuGet
 on:
   push:
     branches:
-      - main
-    paths:
-      - '**/*.csproj'
+      - release/production
 
 permissions:
   contents: write
 
 jobs:
   publish:
-    name: Publish Nugets 
+    name: Publish Nugets
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # fetch full history so we can compare versions and push tags
+          fetch-depth: 0   # full history so Nerdbank.GitVersioning can compute the git height
 
       - name: Setup Build Environment
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'    
+          dotnet-version: '10.0.x'
 
-      - name: Check Version
-        id: check_version
+      # Derives the version from version.json + git height and exports it to the
+      # steps below as NBGV_* environment variables. The build itself picks the
+      # version up automatically via the Nerdbank.GitVersioning package.
+      - name: Set Version
         run: |
-          CSPROJ=src/Tasks/Tasks.csproj
-          VERSION=$(grep -oPm1 "(?<=<Version>)[^<]+" "$CSPROJ")
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "Package version: $VERSION"
-
-          if git show HEAD~1:"$CSPROJ" | grep -q "<Version>$VERSION</Version>"; then
-            echo "Version did not change. Exiting."
-            exit 0
-          fi
+          dotnet tool install --global nbgv --version 3.10.91
+          nbgv cloud -a
 
       - name: Restore Project Dependencies
         run: dotnet restore
@@ -52,10 +45,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag v${VERSION}
-          git push origin v${VERSION}
+          git tag v${NBGV_SimpleVersion}
+          git push origin v${NBGV_SimpleVersion}
 
       - name: Publish NuGet
         run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
-
-
