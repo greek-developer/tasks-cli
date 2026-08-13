@@ -9,13 +9,14 @@ configured folders, scans them for lines that begin with a todo prefix (`- [ ]`,
 expression.
 
 The point is that the files stay the source of truth. Notes, READMEs and scratch files keep
-holding the tasks in whatever form their author already uses; this tool only reads them and
+holding the tasks in whatever form their author already uses; this tool reads them and
 presents the result — filtered by tag, grouped by project, or arranged as the GTD lists
 (inbox / next / review / backlog). Nothing is imported into a database and no separate task
 store is introduced.
 
-It is **pre-release** and, apart from its own configuration file, currently **only reads** —
-no command writes to a monitored file.
+It is **pre-release**. Reading is nearly all it does: the only command that writes to a user's
+file is `todo add`, which appends one line to the single file named on the command line. It
+never edits, reorders or ticks off a line that is already there.
 
 ## Build & run
 
@@ -24,13 +25,13 @@ dotnet build                                       # build everything
 dotnet build -c Release                            # release build
 dotnet test                                        # run all tests (see Tests - none yet)
 dotnet run --project src/Tasks -- get-config-path  # run the CLI
-dotnet pack -c Release                             # produce the global tool into ./nupkg
+dotnet pack -c Release                             # produce the global tool into ./release
 ```
 
 Install the packed tool locally to exercise it as users will:
 
 ```powershell
-dotnet tool install grdev.tasks-cli --global --add-source ./nupkg --prerelease
+dotnet tool install grdev.tasks-cli --global --add-source ./release --prerelease
 ```
 
 No environment variables, no local services, no credentials. The only state is the
@@ -56,6 +57,7 @@ and must stay in step with `PackageId` in `Tasks.csproj`.
 
 Standard grdev layout ([AGENTS.md](AGENTS.md)), partially populated. `tests/`, `scripts/`,
 `docs/` and `specs/` do not exist yet — each is created when it first holds something.
+`skills/` is the one addition to the standard layout.
 
 | Path | Contains |
 |---|---|
@@ -63,6 +65,7 @@ Standard grdev layout ([AGENTS.md](AGENTS.md)), partially populated. `tests/`, `
 | `src/Tasks/Commands` | One static class per command group (`folders`, `todo`, `tag`, `project`, `gtd`), each returning the `System.CommandLine` commands it owns |
 | `src/Tasks/Config` | The config model (`TasksConfig`, `MonitoredFolder`) and `ConfigurationManager`, which loads and saves it |
 | `src/Tasks/Todo` | The `Todo` record and `TodoManager`, which does the scanning and the regex extraction |
+| `skills/tasks` | `SKILL.md`, the agent-facing guide. Not part of the standard layout — it is embedded into the assembly by `Tasks.csproj` and printed by `tasks skill`, so the file that ships is the file that is versioned. Edit it here, never in a copy |
 | `.github/workflows` | `publish-nuget.yml` — packs and pushes on a push to `release/production` |
 
 The project folder and assembly are `Tasks`; the packaged tool is `grdev.tasks-cli` and the
@@ -104,9 +107,10 @@ file source in rather than reaching for them.
   overrides the version Nerdbank.GitVersioning computes.
 - **Never change `UserStorage.FolderName` without changing `PackageId`**, or the reverse.
   They are the same name, and moving the folder strands every existing user's configuration.
-- **Never make a command write to a monitored file** without that being a deliberate,
-  recorded decision. Users point this tool at their real notes on the strength of it being
-  read-only; `todo add` is a stub for exactly that reason.
+- **Never let anything but `todo add` write to a user's file**, and never widen what it does,
+  without that being a deliberate, recorded decision. Users point this tool at their real
+  notes, so appending one line to one named file is the whole of the write surface —
+  completing, editing, reordering or deleting an existing line is not on it.
 - **Never assume the config file exists or is complete.** It is created on demand, and a
   user hand-edits it.
 
@@ -124,3 +128,12 @@ file source in rather than reaching for them.
 - **Existing users' `~/.tasks` is not migrated by the tool.** The old folder stays where it
   is and the tool behaves as if it had never been configured; the folder must be moved to
   `~/.grdev.tasks-cli` by hand.
+- **The scan covers every monitored folder that exists on disk**, aggregated into one list.
+  A configured folder that is missing is skipped and the remaining folders are still scanned.
+- **A file is read once per scan, keyed on its full path.** Monitored folders may be nested,
+  and the first folder in config order to reach a file supplies the settings its todos are
+  parsed with.
+- **`todo add` writes to a user's file** — the one command that does. It appends a single line
+  to the file named on the command line, prefixed with that folder's first configured marker
+  and matching the file's existing line endings, and refuses rather than half-writing. Nothing
+  else in the tool writes outside its own configuration.

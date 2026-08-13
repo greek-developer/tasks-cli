@@ -47,43 +47,54 @@ public static class TodoManager
         var config = ConfigurationManager.Config;
         var todos = new List<Todo>();
 
+        // One monitored folder can sit inside another, and the outer scan already walked the
+        // inner folder's files. Remember every file read so a todo is reported once, under the
+        // configuration of the first folder that claimed it.
+        // The comparison follows the filesystem: Linux distinguishes case in paths, Windows and
+        // macOS do not.
+        var scannedFiles = new HashSet<string>(
+            OperatingSystem.IsLinux() ? StringComparer.Ordinal : StringComparer.OrdinalIgnoreCase);
+
         foreach (var folderConfiguration in config.Folders)
         {
-            if (Directory.Exists(folderConfiguration.Path))
+            // A configured folder that is not on this machine is simply skipped - the remaining
+            // folders are still scanned.
+            if (!Directory.Exists(folderConfiguration.Path))
+                continue;
+
+            foreach (var fileNamePattern in folderConfiguration.FileNamePatterns)
             {
-                foreach (var fileNamePattern in folderConfiguration.FileNamePatterns)
+                var todoFiles = GetFilesRecursive(folderConfiguration.Path, fileNamePattern, folderConfiguration);
+
+                foreach (var file in todoFiles)
                 {
-                    var todoFiles = GetFilesRecursive(folderConfiguration.Path, fileNamePattern, folderConfiguration);
+                    if (!scannedFiles.Add(Path.GetFullPath(file)))
+                        continue;
 
-                    foreach (var file in todoFiles)
+                    var lines = File.ReadAllLines(file);
+                    for (int i = 0; i < lines.Length; i++)
                     {
-                        var lines = File.ReadAllLines(file);
-                        for (int i = 0; i < lines.Length; i++)
-                        {
-                            var line = lines[i].TrimStart();
+                        var line = lines[i].TrimStart();
 
-                            if (folderConfiguration.todoPrefixes.Any(line.StartsWith))
+                        if (folderConfiguration.todoPrefixes.Any(line.StartsWith))
+                        {
+                            todos.Add(new Todo
                             {
-                                todos.Add(new Todo
-                                {
-                                    Description = line,
-                                    FilePath = file,
-                                    LineNumber = i + 1,
-                                    DueDate = ExtractDueDate(line, folderConfiguration.DueDatePattern),
-                                    Tags = ExtractTags(line, folderConfiguration.TagPattern),
-                                    Projects = ExtractProjects(line,folderConfiguration.ProjectPattern),
-                                    Priority = null // Priority extraction can be implemented similarly
-                                });
-                            }
+                                Description = line,
+                                FilePath = file,
+                                LineNumber = i + 1,
+                                DueDate = ExtractDueDate(line, folderConfiguration.DueDatePattern),
+                                Tags = ExtractTags(line, folderConfiguration.TagPattern),
+                                Projects = ExtractProjects(line,folderConfiguration.ProjectPattern),
+                                Priority = null // Priority extraction can be implemented similarly
+                            });
                         }
                     }
                 }
-
-                return todos;
             }
         }
 
-        return new List<Todo>();
+        return todos;
     }
 
     private static DateOnly? ExtractDueDate(string line, string dueDatePattern)

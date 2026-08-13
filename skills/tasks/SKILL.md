@@ -63,13 +63,19 @@ tasks folders add <path> [--name <name>] # start monitoring a folder
 tasks get-config-path                    # the config file, for the patterns above
 ```
 
-Two things worth knowing before you conclude the user has nothing to do:
+Every monitored folder is scanned and the results are pooled into one list. Two things worth
+knowing before you conclude the user has nothing to do:
 
-- **Only the first monitored folder that exists on disk is scanned.** Adding a second folder
-  does not widen the search today; the todos come from whichever configured folder is found
-  first. Say so rather than reporting an empty or short list as fact.
+- **A configured folder that is not on this machine is skipped without a word.** Nothing is
+  printed and no command fails, so a path that has moved or was never checked out simply
+  contributes nothing. `tasks folders list` prints the configured paths, not whether they
+  exist — check the suspect ones yourself before reporting a short list as fact.
 - An empty list far more often means *no folder is monitored* or *the lines do not start with
   a recognised prefix* than it means the user is done. Check `tasks folders list` first.
+
+Folders may be nested — one monitored folder living inside another is fine. Each file is read
+once, so a todo in the overlap is reported once, under the settings of whichever folder is
+listed first in the config.
 
 The config file is plain JSON and is created with defaults on first run. Editing it by hand is
 the supported way to change file patterns, prefixes, the due-date pattern or the excluded
@@ -146,7 +152,7 @@ description, a missing folder or an unwritable file all exit `1` and leave the f
   the `(-> file:line)` of a todo that already exists. A plausible-looking wrong path inside an
   existing folder will happily create a new file nobody reads.
 - **Never report an empty list as "nothing to do"** without checking `tasks folders list` — and
-  remember only the first existing monitored folder is scanned.
+  remember a configured folder that is missing from this machine is skipped silently.
 - **Never treat `--tags a,b` as "both a and b".** It matches either; filter further yourself.
 - **Never add a folder full of source or build output** to widen the search. The scan walks
   every `.md`, `.txt` and `.todo` under it and picks up every `TODO` comment marker it finds.
