@@ -1,4 +1,4 @@
-# grdev.tasks
+# grdev.tasks-cli
 
 A .NET command-line tool for managing tasks in .txt or .md files. The tool monitors multiple folders and gather the tasks based on common prefixes (configurable). Tasks can be filtered by tags, and can be displayed in a GTD-compatible list (`tasks gtd`)
 
@@ -20,7 +20,7 @@ This is a pre-release version so the functionality is not yet refined and there 
 
 ### Install
 
-`dotnet tool install --global grdev.tasks`
+`dotnet tool install --global grdev.tasks-cli`
 
 ### Setup 
 
