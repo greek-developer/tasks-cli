@@ -3,14 +3,14 @@
 A .NET command-line tool for managing tasks in .txt or .md files. The tool monitors multiple folders and gather the tasks based on common prefixes (configurable). Tasks can be filtered by tags, and can be displayed in a GTD-compatible list (`tasks gtd`)
 
 ## Features
-- Add, list, and complete todos
+- List todos, and append new ones to a file
 - Organize tasks by project, tag, and folder
 - Configuration management for custom workflows
 - Extensible command structure
 
 ## Prerelease Disclaimer
 
-This is a pre-release version so the functionality is not yet refined and there may be bugs. Currently the application only reads tasks and does not modify files in any way (except it's own config file)
+This is a pre-release version so the functionality is not yet refined and there may be bugs. Apart from its own config file, the only file the tool writes is the one named by `tasks todo add` — and it only ever appends a line. There is no command that edits, completes or removes an existing todo.
 
 ## Getting Started
 
@@ -35,7 +35,8 @@ Folder options (file patterns to scan, tasks prefixes, etc) can be configured in
 ## Available Commands
 
 ### Todo Commands
-- `list` — List all todos, optionally filter by tags (`--tags tag1,tag2`).
+- `todo list` — List all todos, optionally filter by tags (`--tags tag1,tag2`).
+- `todo add <description> <filePath>` — Append a todo line to a file. The folder must exist; the file is created if it does not. Write `#tags`, `@projects` and `{due: yyyy-MM-dd}` inside the description.
 
 ### Tag Commands
 - `tag list` — List all tags used in todos.
@@ -54,7 +55,10 @@ Folder options (file patterns to scan, tasks prefixes, etc) can be configured in
 - `folders list` — List all monitored folders.
 - `folders add <path> [--name <name>]` — Add a monitored folder.
 
-
+### Tool Commands
+- `get-config-path` — Print the full path to the config file.
+- `version` — Print the version, commit and build time of this build, read from `ProductionVersion.json`.
+- `skill` — Print the agent guide embedded in the tool. `tasks skill > SKILL.md` reproduces [`skills/tasks/SKILL.md`](skills/tasks/SKILL.md) byte for byte.
 
 ## Versioning
 
