@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   
   <PropertyGroup>  
@@ -7,7 +7,7 @@
     <RootNamespace>Tasks</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>    
-    <PackageOutputPath>../../nupkg</PackageOutputPath>
+    <PackageOutputPath>../../release</PackageOutputPath>
     <PackAsTool>true</PackAsTool>
   </PropertyGroup>
 
