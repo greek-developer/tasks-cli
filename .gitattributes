@@ -1,0 +1,6 @@
+# Make line endings deterministic across clones, regardless of core.autocrlf.
+* text=auto eol=crlf
+
+# Exception: scripts executed by sh. A CRLF `run:` block fails on a Linux runner with
+# `$'\r': command not found` - the same reason git hooks are pinned to LF.
+.github/workflows/** text eol=lf

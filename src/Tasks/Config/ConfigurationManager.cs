@@ -17,10 +17,7 @@ public static class ConfigurationManager
     public static TasksConfig Config { get => _config ??= LoadConfig(); }
 
     public static string GetConfigPath() =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            ".tasks",
-            "config.json");
+        Path.Combine(UserStorage.Folder, "config.json");
 
     private static TasksConfig LoadConfig()
     {
