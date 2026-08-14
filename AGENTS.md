@@ -148,7 +148,7 @@ How each app surface exposes it:
 | App type | Exposes it via |
 |---|---|
 | **Web API** | A `GET /api/diagnostics/version` endpoint that returns the `ProductionVersion.json` contents as JSON |
-| **Web interface** | The version, commit SHA, and build time shown in the site footer (see below) |
+| **Web interface** | The version, short commit SHA, and build time shown in the site footer (see below) |
 | **CLI** | A `version` command that reads the file and prints the fields (see below) |
 
 A **web interface** shows the identity in its footer as:
@@ -156,6 +156,10 @@ A **web interface** shows the identity in its footer as:
 ```
 {version} - {commit-sha} - {build-time}
 ```
+
+where `{commit-sha}` is the **first 8 characters** of the commit SHA — enough to identify the
+commit at a glance without cluttering the footer. `ProductionVersion.json` and the
+`/api/diagnostics/version` payload still carry the full SHA.
 
 The CLI `version` command prints:
 
