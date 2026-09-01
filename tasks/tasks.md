@@ -5,4 +5,5 @@ Each task names the spec(s) it touches.
 
 ## Open
 
-_None yet._
+- [ ] Add the option to serve a kanban board of the detected tasks.
+This probably would need to better specificy the protocol probably worth the effort.
