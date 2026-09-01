@@ -137,3 +137,11 @@ file source in rather than reaching for them.
   to the file named on the command line, prefixed with that folder's first configured marker
   and matching the file's existing line endings, and refuses rather than half-writing. Nothing
   else in the tool writes outside its own configuration.
+
+### 2026-09-01
+
+- `PackageProjectUrl` points at this tool's page on the blog,
+  `https://greekdeveloper.com/tools/tasks-cli/`, so the NuGet listing and the site agree on one
+  canonical address.
+- `RepositoryUrl` is published for every tool, private repository or not.
+- `README.md` carries the project-page link and the install command line.

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   
   <PropertyGroup>  
@@ -19,7 +19,7 @@
     <Authors>Thomas Sarmis (thomas.sarmis@gmail.com), GRDEV</Authors>
     <RepositoryUrl>https://github.com/greek-developer/tasks-cli</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://greekdeveloper.com/projects/tasks</PackageProjectUrl>
+    <PackageProjectUrl>https://greekdeveloper.com/tools/tasks-cli/</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 

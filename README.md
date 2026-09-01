@@ -2,6 +2,8 @@
 
 A .NET command-line tool for managing tasks in .txt or .md files. The tool monitors multiple folders and gather the tasks based on common prefixes (configurable). Tasks can be filtered by tags, and can be displayed in a GTD-compatible list (`tasks gtd`)
 
+**Project page:** [greekdeveloper.com/tools/tasks-cli](https://greekdeveloper.com/tools/tasks-cli/)
+
 ## Features
 - List todos, and append new ones to a file
 - Organize tasks by project, tag, and folder
