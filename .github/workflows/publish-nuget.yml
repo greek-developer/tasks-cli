@@ -13,7 +13,6 @@ jobs:
   publish:
     name: Publish Nugets
     runs-on: ubuntu-latest
-    environment: production   # matches the Environment set on the nuget.org Trusted Publishing policy
 
     steps:
       - name: Checkout Repository
