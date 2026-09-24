@@ -2,4 +2,8 @@
   <Folder Name="/src/">
     <Project Path="src/Tasks/Tasks.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Tasks.IntegrationTests/Tasks.IntegrationTests.csproj" />
+    <Project Path="tests/Tasks.UnitTests/Tasks.UnitTests.csproj" />
+  </Folder>
 </Solution>

@@ -1,6 +1,4 @@
 using System.CommandLine;
-using System.ComponentModel;
-using System.Diagnostics;
 
 namespace Tasks.Config;
 
@@ -38,40 +36,6 @@ internal static class ConfigCommand
             File.WriteAllText(path, "{\n  \"folders\": []\n}\n");
         }
 
-        var editor = Environment.GetEnvironmentVariable("VISUAL")
-            ?? Environment.GetEnvironmentVariable("EDITOR")
-            ?? (OperatingSystem.IsWindows() ? "notepad" : "vi");
-
-        try
-        {
-            // ArgumentList quotes each argument itself, so a path containing a quote or a space
-            // survives intact instead of being re-split by a hand-built command line.
-            var info = new ProcessStartInfo(editor) { UseShellExecute = false };
-            info.ArgumentList.Add(path);
-
-            using var process = Process.Start(info);
-            if (process is null)
-            {
-                Console.Error.WriteLine($"Could not launch editor '{editor}'.");
-                return 1;
-            }
-
-            process.WaitForExit();
-
-            // The editor's own exit code is not our contract - a non-zero from it would otherwise
-            // misleadingly read as a tasks failure.
-            if (process.ExitCode == 0)
-            {
-                return 0;
-            }
-
-            Console.Error.WriteLine($"editor exited with code {process.ExitCode}");
-            return 1;
-        }
-        catch (Exception exception) when (exception is Win32Exception or InvalidOperationException)
-        {
-            Console.Error.WriteLine($"Could not launch editor '{editor}': {exception.Message}");
-            return 1;
-        }
+        return Editor.Open(path);
     }
 }

@@ -24,6 +24,7 @@ namespace Tasks
             rootCommand.Add(ConfigCommand.Create());
             rootCommand.Add(VersionCommand.Create());
             rootCommand.Add(SkillCommand.Create());
+            rootCommand.Add(ManagedTodoCommands.CreateSync());
 
             AddCommands(rootCommand, FolderCommands.GenerateFolderCommands());
             AddCommands(rootCommand, TodoCommands.GenerateTodoCommands());

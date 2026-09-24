@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 
 using Tasks.Config;
+using Tasks.Managed;
 using Tasks.Todo;
 
 namespace Tasks.Commands;
@@ -62,15 +63,37 @@ public static class TodoCommands
             Console.WriteLine("");            
         });        
 
-        var todoAddCommand = new Command("add", "add a todo line to a file")
+        var todoAddCommand = new Command("add", "add a todo - to a managed folder's tasks file, or appended to a named file")
         {
             new Argument<string>("description")
             {
                 Description = "The text of the todo. #tags, @projects and {due: yyyy-MM-dd} inside it are picked up by the reader"
             },
-            new Argument<string>("filePath")
+            new Argument<string?>("filePath")
             {
-                Description = "The file the todo is appended to. Created if the containing folder exists"
+                Arity = ArgumentArity.ZeroOrOne,
+                Description = "Append to this file instead of a managed folder. Created if the containing folder exists; never committed"
+            },
+            new Option<string?>("--folder", "-f")
+            {
+                Description = "The managed folder to add to, by name. Defaults to the configured default, or the only managed folder"
+            },
+            new Option<string?>("--due", "-d")
+            {
+                Description = "Due date: yyyy-MM-dd, today, tomorrow, +3d, +2w, or a weekday (mon..sun)"
+            },
+            new Option<string[]>("--tag", "-t")
+            {
+                Description = "A tag, without the #. Repeat it, or separate with commas",
+                AllowMultipleArgumentsPerToken = false
+            },
+            new Option<string?>("--project", "-p")
+            {
+                Description = "The project, with or without the @"
+            },
+            new Option<string?>("--priority")
+            {
+                Description = "Priority: a single letter, A highest"
             },
         };
 
@@ -81,20 +104,26 @@ public static class TodoCommands
             new Command("todo", "Manage Todos")
             {
                 todoListCommand,
-                todoAddCommand
+                todoAddCommand,
+                ManagedTodoCommands.CreateDone(),
+                ManagedTodoCommands.CreateEdit(),
+                ManagedTodoCommands.CreateRemove(),
+                ManagedTodoCommands.CreateOpen(),
             }
         };
     }
 
     /// <summary>
-    /// Appends one todo line to a text file. This is the only command that writes to a file the
-    /// user owns, so every way it can go wrong reports on stderr and returns a non-zero exit
-    /// code - it never claims to have written something it did not.
+    /// Adds one todo. Without a file path it goes to a managed folder's tasks file and is
+    /// committed and pushed; with one it is appended to that file, as it always was. Every way it
+    /// can go wrong reports on stderr and returns a non-zero exit code - it never claims to have
+    /// written something it did not.
     /// </summary>
     private static int Add(ParseResult parseResult)
     {
         var description = (parseResult.GetValue<string>("description") ?? string.Empty).Trim();
-        var requestedPath = (parseResult.GetValue<string>("filePath") ?? string.Empty).Trim();
+        var requestedPath = parseResult.GetValue<string?>("filePath")?.Trim();
+        var folderName = parseResult.GetValue<string?>("--folder");
 
         if (description.Length == 0)
         {
@@ -108,6 +137,120 @@ public static class TodoCommands
             return 1;
         }
 
+        var fields = ReadFields(parseResult);
+        if (fields is null)
+        {
+            return 1;
+        }
+
+        if (requestedPath is not null && folderName is not null)
+        {
+            Console.Error.WriteLine("Pass either a file path or --folder, not both.");
+            return 1;
+        }
+
+        return requestedPath is null
+            ? AddToManaged(description, folderName, fields)
+            : AppendToFile(description, requestedPath, fields);
+    }
+
+    private sealed record Fields(List<string> Tags, string? Project, DateOnly? Due, string? Priority);
+
+    /// <summary>The optional fields of `todo add`, validated; null (after reporting) when any is unusable.</summary>
+    private static Fields? ReadFields(ParseResult parseResult)
+    {
+        var tags = new List<string>();
+        foreach (var raw in (parseResult.GetValue<string[]>("--tag") ?? [])
+                     .SelectMany(t => t.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+        {
+            var tag = TodoLine.NormalizeTag(raw);
+            if (tag is null)
+            {
+                Console.Error.WriteLine($"'{raw}' is not a usable tag. A tag is one word: letters, digits and underscores.");
+                return null;
+            }
+
+            if (!tags.Contains(tag))
+            {
+                tags.Add(tag);
+            }
+        }
+
+        string? project = null;
+        if (parseResult.GetValue<string?>("--project") is { } rawProject)
+        {
+            project = TodoLine.NormalizeProject(rawProject);
+            if (project is null)
+            {
+                Console.Error.WriteLine($"'{rawProject}' is not a usable project. A project is one word: letters, digits and underscores.");
+                return null;
+            }
+        }
+
+        DateOnly? due = null;
+        if (parseResult.GetValue<string?>("--due") is { } rawDue)
+        {
+            due = DueDate.Parse(rawDue, DateOnly.FromDateTime(DateTime.Now));
+            if (due is null)
+            {
+                Console.Error.WriteLine($"'{rawDue}' is not a date. Use yyyy-MM-dd, today, tomorrow, +3d, +2w or a weekday.");
+                return null;
+            }
+        }
+
+        string? priority = null;
+        if (parseResult.GetValue<string?>("--priority") is { } rawPriority)
+        {
+            priority = TodoLine.NormalizePriority(rawPriority);
+            if (priority is null)
+            {
+                Console.Error.WriteLine($"'{rawPriority}' is not a priority. Use a single letter, A highest.");
+                return null;
+            }
+        }
+
+        return new Fields(tags, project, due, priority);
+    }
+
+    private static int AddToManaged(string description, string? folderName, Fields fields)
+    {
+        var folder = ManagedFolders.ResolveTarget(ConfigurationManager.Config, folderName, out var error);
+        if (folder is null)
+        {
+            Console.Error.WriteLine(error);
+            return 1;
+        }
+
+        // The folder's own prefix is always used, so every line in the file reads alike.
+        var prefix = ManagedFolders.Prefix(folder);
+        var text = StripPrefix(description, folder.todoPrefixes);
+        var tasksPath = ManagedFolders.TasksFilePath(folder);
+
+        return ManagedWriter.Write(folder, new GitClient(), (file, _) =>
+        {
+            var id = TaskId.Create(text, file.Ids());
+            var line = TodoLine.Compose(prefix, text, fields.Tags, fields.Project, fields.Due, fields.Priority, id);
+            var index = file.AddToSection(folder.Managed!.OpenSection, line, createBefore: folder.Managed.DoneSection);
+
+            return Edit.Done(
+                $"add task: {TodoLine.Summary(line, folder.todoPrefixes)}",
+                $"{line} (-> {tasksPath}:{index + 1})");
+        });
+    }
+
+    private static string StripPrefix(string description, IEnumerable<string> prefixes)
+    {
+        var prefix = prefixes
+            .Where(p => description.StartsWith(p, StringComparison.Ordinal))
+            .OrderByDescending(p => p.Length)
+            .FirstOrDefault();
+
+        return prefix is null ? description : description[prefix.Length..].Trim();
+    }
+
+    /// <summary>Appends one line to a file named on the command line. No git: the file is the user's.</summary>
+    private static int AppendToFile(string description, string requestedPath, Fields fields)
+    {
         if (requestedPath.Length == 0)
         {
             Console.Error.WriteLine("The file path is empty. Pass the file the todo belongs in as the second argument.");
@@ -145,7 +288,7 @@ public static class TodoCommands
             return 1;
         }
 
-        var line = WithPrefix(description, filePath);
+        var line = TodoLine.Compose(string.Empty, WithPrefix(description, filePath), fields.Tags, fields.Project, fields.Due, fields.Priority, id: null);
         var newLine = DetectNewLine(existing);
 
         var content = new StringBuilder(existing);

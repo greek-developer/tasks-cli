@@ -6,13 +6,14 @@ A .NET command-line tool for managing tasks in .txt or .md files. The tool monit
 
 ## Features
 - List todos, and append new ones to a file
+- Keep a git-synced task list: add, edit, complete and remove tasks from the command line, with every change committed and pushed
 - Organize tasks by project, tag, and folder
 - Configuration management for custom workflows
 - Extensible command structure
 
 ## Prerelease Disclaimer
 
-This is a pre-release version so the functionality is not yet refined and there may be bugs. Apart from its own config file, the only file the tool writes is the one named by `tasks todo add` — and it only ever appends a line. There is no command that edits, completes or removes an existing todo.
+This is a pre-release version so the functionality is not yet refined and there may be bugs. Monitored folders are read-only: apart from its own config file, the tool only appends the line `tasks todo add` is given to the file it names. The exception is a folder you mark as **managed** — there the tool owns one tasks file (`tasks/tasks.md`) and edits, completes and removes tasks in it, committing and pushing each change.
 
 ## Getting Started
 
@@ -35,11 +36,29 @@ Folder options (file patterns to scan, tasks prefixes, etc) can be configured in
 `tasks config path`
 `tasks config edit`
 
+### A git-synced task list
+
+Mark a folder inside a git repository as managed, and add tasks to it from anywhere:
+
+```
+tasks folders manage notes --default
+tasks todo add "renew passport" --due fri --tag admin --priority A
+tasks todo done 23ph
+```
+
+Each task gets a short id (`{id: 23ph-s8z5}`) you can refer to by its first four characters. Every change pulls, commits the tasks file alone, and pushes.
+
 ## Available Commands
 
 ### Todo Commands
 - `todo list` — List all todos, optionally filter by tags (`--tags tag1,tag2`).
-- `todo add <description> <filePath>` — Append a todo line to a file. The folder must exist; the file is created if it does not. Write `#tags`, `@projects` and `{due: yyyy-MM-dd}` inside the description.
+- `todo add <description> [--folder <name>] [--due <date>] [--tag <tag>] [--project <p>] [--priority <X>]` — Add a task to a managed folder's tasks file, then commit and push it. `--due` takes `yyyy-MM-dd`, `today`, `tomorrow`, `+3d`, `+2w` or a weekday.
+- `todo add <description> <filePath> [options]` — Append a todo line to any file instead. The folder must exist; the file is created if it does not. Nothing is committed.
+- `todo done <id>` — Tick a task, add `{done-date: …}` and move it to `## Done`.
+- `todo edit <id> [--text] [--due | --no-due] [--add-tag] [--remove-tag] [--project | --no-project] [--priority | --no-priority]` — Change a task.
+- `todo rm <id>` — Delete a task.
+- `todo open <id>` — Open the tasks file in your editor at the task's line.
+- `sync [--folder <name>]` — Commit hand edits to the tasks files, pull, and push.
 
 ### Tag Commands
 - `tag list` — List all tags used in todos.
@@ -56,7 +75,9 @@ Folder options (file patterns to scan, tasks prefixes, etc) can be configured in
 
 ### Folder Commands
 - `folders list` — List all monitored folders.
-- `folders add <path> [--name <name>]` — Add a monitored folder.
+- `folders add <path> [--name <name>] [--managed] [--tasks-file <path>] [--no-push] [--default]` — Add a monitored folder, optionally managed.
+- `folders manage <name> [--tasks-file <path>] [--no-push] [--default]` — Let the tool write tasks to a monitored folder in a git repository.
+- `folders unmanage <name>` — Make a managed folder read-only again.
 
 ### Tool Commands
 - `config path` — Print the full path to the config file.

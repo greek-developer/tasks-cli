@@ -4,18 +4,21 @@ description: >-
   Read and write plain-text todos with the `tasks` CLI (grdev.tasks-cli), which collects todo
   lines out of the `.md`, `.txt` and `.todo` files in the folders it monitors — listing what is
   open, filtering by tag, showing the GTD views (inbox, next, review, backlog), naming the tags
-  and projects in use, and appending a new todo to a file. Use whenever the user asks about
-  their todos or wants one written down, including phrasings like "add a todo", "what's on my
-  list", "what's due", "what's in my inbox", "what should I work on next", "put that on the
-  backlog", "remind me to …", or "which projects am I tracking". Also use when choosing which
-  folders are scanned, or when a `tasks` command printed nothing and the reason needs
-  explaining.
+  and projects in use, and adding, completing, editing and removing tasks in a managed folder's
+  git-synced tasks file. Use whenever the user asks about their todos or wants one written
+  down or changed, including phrasings like "add a todo", "what's on my list", "what's due",
+  "what's in my inbox", "what should I work on next", "put that on the backlog", "remind me to
+  …", "mark that done", "push that to Friday", or "which projects am I tracking". Also use when
+  choosing which folders are scanned, or when a `tasks` command printed nothing and the reason
+  needs explaining.
 ---
 
 # Working with plain-text todos
 
 The `tasks` CLI does not own a database. It reads todo lines out of files the user already
-keeps — notes, READMEs, a `todo.md` — and writes one back when asked. Nothing prompts,
+keeps — notes, READMEs, a `todo.md`. Monitored folders are read-only, except a **managed**
+folder: there the tool owns one tasks file (`tasks/tasks.md` by default) and commits and pushes
+every change it makes to it. Nothing prompts,
 everything is an argument, results go to stdout and complaints go to stderr, so an agent can
 drive it end to end.
 
@@ -51,6 +54,8 @@ out of it:
 | `#word` | a tag | `#next`, `#review` and `#backlog` are what drive the GTD views |
 | `@word` | a project | Only reported, never filtered on |
 | `{due: 2026-09-01}` | a due date | `yyyy-MM-dd` or `yyyy/MM/dd`. Anything else is treated as undated |
+| `{pri: A}` | a priority | One capital letter |
+| `{id: 23ph-s8z5}` | the task's id | Only on lines in a managed tasks file; how you refer to the task |
 
 Only `.md`, `.txt` and `.todo` files are scanned, and `node_modules`, `.git` and dot-folders
 are skipped. All of this is per-folder configuration — see the config file below.
@@ -59,7 +64,9 @@ are skipped. All of this is per-folder configuration — see the config file bel
 
 ```bash
 tasks folders list                       # what is monitored today
-tasks folders add <path> [--name <name>] # start monitoring a folder
+tasks folders add <path> [--name <name>] # start monitoring a folder (read-only)
+tasks folders manage <name> [--default]  # let the tool write tasks there; must be in a git repo
+tasks folders unmanage <name>            # read-only again
 tasks config path                        # the config file, for the patterns above
 tasks config edit                        # open it in $VISUAL/$EDITOR
 ```
@@ -121,37 +128,84 @@ Overdue todos sort first, then today's, then undated, then the rest.
 
 ## Adding one
 
+To a managed folder — the normal case:
+
 ```bash
-tasks todo add "call the accountant #work @taxes {due: 2026-09-01}" ~/notes/todo.md
+tasks todo add "call the accountant" --due fri --tag work --project taxes --priority A
+tasks todo add "call the accountant" --folder notes      # when several folders are managed
 ```
 
-The description is **one shell argument** — quote it. The line is appended at the end of the
-file, prefixed with the folder's first configured marker (`- [ ] ` by default) unless the text
-already starts with a marker itself. The file's existing line endings are matched, and the file
-is created if it is missing — but its folder must already exist. On success the new line and
-its location are printed, exactly as `tasks todo list` would show it.
+The description is **one shell argument** — quote it. The task lands at the end of `## Open` in
+the folder's tasks file with a fresh `{id: …}`, and is committed and pushed. The folder is the
+one named by `--folder`, else the configured default, else the only managed folder; with
+several managed folders and no default the command refuses, and `tasks folders list` shows which
+is which.
 
-Write the tags, project and due date into the description itself, in the syntax above; there
-are no options for them.
+`--due` takes `yyyy-MM-dd`, `today`, `tomorrow`, `+3d`, `+2w` or a weekday (`fri` = the next
+Friday after today); the absolute date is written. `--tag` repeats or takes a comma list. Tags
+and projects are passed without `#` / `@`.
+
+To a file of the user's that is not managed, name the file instead of a folder:
+
+```bash
+tasks todo add "call the accountant" ~/notes/todo.md --tag work
+```
+
+That appends one line at the end of the file — no id, no commit. The file is created if it is
+missing, but its folder must already exist.
+
+On success both forms print the new line and its location, as `tasks todo list` shows it.
+
+## Changing one
+
+Only tasks in a managed tasks file can be changed. Refer to a task by its id — the whole
+`23ph-s8z5`, or any unique first four or more characters (`23ph`) — taken from the
+`{id: …}` in `tasks todo list` output. A line written by hand without an id can be addressed as
+`<tasks file>:<line>`, but that is refused if the pull brought in changes; list again and use
+what it prints.
+
+```bash
+tasks todo done 23ph                     # tick, add {done-date: today}, move to ## Done
+tasks todo edit 23ph --due +1w --add-tag waiting --priority B
+tasks todo edit 23ph --text "call the accountant back"   # keeps tags, project, markers
+tasks todo edit 23ph --no-due --remove-tag waiting --no-project --no-priority
+tasks todo rm 23ph                       # delete the line
+tasks todo open 23ph                     # the user's editor, at that line
+```
+
+Every change pulls first, then commits just the tasks file (`complete task: …`, `edit task: …`
+…) and pushes. Nothing else in the user's repository is staged or committed.
+
+`tasks sync` commits any uncommitted change to the tasks files (hand edits included), pulls
+and pushes, for every managed folder or just `--folder <name>`.
 
 ## Exit codes
 
 | Code | Meaning | Do this |
 |---|---|---|
-| `0` | Done | For `todo add`, the printed `(-> file:line)` is where it landed |
+| `0` | Done — for a managed folder, committed and pushed | The printed `(-> file:line)` is where it landed |
 | `1` | Rejected or failed, or the command line was wrong | Read stderr; nothing was written |
+| `3` | Written, but not committed or not pushed | Tell the user what stderr says; `tasks sync` finishes it once the cause (network, credentials, a rejected push) is fixed |
 
-`todo add` reports and refuses rather than half-writing: an empty description, a multi-line
-description, a missing folder or an unwritable file all exit `1` and leave the file untouched.
+Commands refuse rather than half-write: a bad date, an ambiguous id, a failed pull, a merge or
+rebase in progress, or a branch with no upstream all exit `1` and leave the file untouched.
 
 ## Never
 
-- **Never tell the user a todo is done, closed or removed.** There is no complete, edit or
-  delete command — this tool only reads and appends. Ticking `- [ ]` to `- [x]` means editing
-  the user's own file, which is their call, not a side effect of a `tasks` command.
-- **Never invent the path for `tasks todo add`.** Take it from `tasks folders list`, or from
-  the `(-> file:line)` of a todo that already exists. A plausible-looking wrong path inside an
-  existing folder will happily create a new file nobody reads.
+- **Never edit a todo outside a managed tasks file**, with the CLI or by hand. Todos in other
+  files belong to the user's notes; `done`/`edit`/`rm` refuse them, and so should you. Say
+  where the todo is and let the user change it.
+- **Never edit a managed tasks file directly** when a `tasks todo` command does the job — the
+  command pulls, keeps the id and commits; a hand edit does none of that until `tasks sync`.
+- **Never report a change as synced on exit code `3`.** It is on disk, not on the remote.
+- **Never `git push --force`, reset or rebase the user's repository** to get past a failed
+  pull or push. Report it and stop.
+- **Never guess a task id.** Take it from `tasks todo list`; if a prefix is ambiguous, use more
+  of it.
+- **Never invent the path for `tasks todo add <file>`.** Prefer a managed folder; otherwise take
+  the path from `tasks folders list`, or from the `(-> file:line)` of a todo that already
+  exists. A plausible-looking wrong path inside an existing folder will happily create a new
+  file nobody reads.
 - **Never report an empty list as "nothing to do"** without checking `tasks folders list` — and
   remember a configured folder that is missing from this machine is skipped silently.
 - **Never treat `--tags a,b` as "both a and b".** It matches either; filter further yourself.

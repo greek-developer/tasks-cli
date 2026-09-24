@@ -86,7 +86,8 @@ public static class TodoManager
                                 DueDate = ExtractDueDate(line, folderConfiguration.DueDatePattern),
                                 Tags = ExtractTags(line, folderConfiguration.TagPattern),
                                 Projects = ExtractProjects(line,folderConfiguration.ProjectPattern),
-                                Priority = null // Priority extraction can be implemented similarly
+                                Priority = ExtractPriority(line, folderConfiguration.PriorityPattern),
+                                Id = TodoLine.GetId(line)
                             });
                         }
                     }
@@ -108,6 +109,12 @@ public static class TodoManager
         }
 
         return null;
+    }
+
+    private static string? ExtractPriority(string line, string priorityPattern)
+    {
+        var match = new System.Text.RegularExpressions.Regex(priorityPattern).Match(line);
+        return match.Success && match.Groups.Count > 1 ? match.Groups[1].Value : null;
     }
 
     private static List<string> ExtractTags(string line, string tagPattern)
