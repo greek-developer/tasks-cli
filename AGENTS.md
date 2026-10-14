@@ -256,23 +256,46 @@ Use only the segments the project actually needs, always in that order.
 | `uat` | User acceptance testing — business sign-off before release | `staging` |
 | `production` | Live | `uat` |
 
-### Hotfixes & per-deployment commits
+### Releasing
 
-Where a deployment needs its own commit history, cut a **version branch** —
-`release/production/2.5`. One branch per deployed version means a fix can target exactly
-what is live without disturbing the next release.
-
-**Fixes always travel forward.** The correct path for any fix, however urgent, is: commit
-to `develop` first, then cherry-pick it forward through each environment branch until it
-reaches production.
+**The default way to release is to fast-forward the release branch to the commit being
+released.** A release branch always points at a commit that is part of `develop`, so what is
+deployed is exactly what was built and verified there. Promotion moves the pointer along the
+chain and creates no commits:
 
 ```
 develop → release/staging → release/uat → release/production
 ```
 
+```powershell
+git switch release/staging
+git merge --ff-only <commit>
+```
+
+| Rule | Detail |
+|---|---|
+| Fast-forward only | Use `--ff-only`. If the release branch can't fast-forward to the commit, it has deviated from `develop` (see below) — stop and raise it rather than merging or forcing |
+| Only `develop` commits | Release only commits that are on `develop`. Never commit to a release branch directly |
+| Promote in order | Promote the commit that is already on the previous environment; production is promoted from `uat`, `uat` from `staging` |
+
+### Hotfixes & per-deployment commits
+
+Cherry-picking is the exception, reserved for special cases such as hotfixes. When a fix
+must go out without the other commits waiting on `develop`, **cherry-pick that specific
+commit onto the release branch**. The release branch is then allowed to deviate from
+`develop`, and from that point it no longer fast-forwards from it.
+
+**Fixes still start on `develop`.** Commit the fix to `develop` first, then cherry-pick it
+onto each release branch that needs it.
+
+Where a deployment needs its own commit history, cut a **version branch** —
+`release/production/2.5`. One branch per deployed version means a fix can target exactly
+what is live without disturbing the next release.
+
 | Situation | Do | Never |
 |---|---|---|
-| Any fix, including urgent ones | Commit to `develop`, then cherry-pick forward to each environment that needs it | Commit to a release branch first |
+| Normal release | Fast-forward the release branch to the commit | Cherry-pick, merge or rebase it |
+| Hotfix that can't wait for the rest of `develop` | Commit to `develop`, then cherry-pick that commit onto the release branch | Commit to a release branch first |
 | A hotfix that was already made on production | Cherry-pick the commit back to `develop` | Merge `release/production` back into `develop` |
 
 **We never merge a release branch back.** A merge drags the whole branch's history and its
@@ -448,6 +471,25 @@ the user to discover it.
 Package metadata (`Title`, `Description`, `Authors`, `RepositoryUrl`,
 `PackageLicenseExpression`, `PackageProjectUrl`, `PackageReadmeFile`) is filled in on the
 same project, not left to defaults.
+
+### Config command
+
+Every tool that reads a config or settings file — as almost all do, since that file lives in
+the one folder described above — exposes it through a `config` command. This is a minimum,
+not a ceiling: `config` must carry at least the two subcommands below, and is free to carry
+more — additional settings worth exposing individually, or a whole sub-area of state the tool
+manages, are welcome under `config` too, at the implementer's judgment. Nothing here caps what
+`config` may grow into; it only sets the floor every tool starts from:
+
+```
+<name> config path   Print the resolved path to the config file
+<name> config edit   Open the config file in $VISUAL / $EDITOR
+```
+
+| Subcommand | Detail |
+|---|---|
+| `config path` | Prints the resolved config file path and nothing else, so a script or agent can locate it without knowing the tool's storage convention |
+| `config edit` | Opens the file in `$VISUAL`, falling back to `$EDITOR`, falling back to a sane platform default (`notepad` on Windows, `vi` elsewhere). If the file does not exist yet, `config edit` creates it — a template with the right shape, not a valid config — rather than opening a blank file or failing |
 
 ### Shipping the agent guide
 
